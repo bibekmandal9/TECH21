@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tutor</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons (Vanilla JS version) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom styles for a clean, modern look */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            color: #334155; /* Slate-700 for text */
+        }
+        .main-container {
+            max-width: 800px;
+            margin: auto;
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .btn-primary {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+        }
+        #answer-container p, #practice-questions-container p {
+            margin-bottom: 1rem;
+            line-height: 1.7;
+        }
+        #diagram-container svg {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0; /* Slate-200 border */
+            padding: 1rem;
+            background-color: white;
+        }
+        .practice-question-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .option-label {
+            display: block;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .option-label:hover {
+            background-color: #f3f4f6;
+            border-color: #60a5fa;
+        }
+        .option-label input {
+            margin-right: 0.75rem;
+        }
+        .correct-answer { background-color: #d1fae5; border-color: #10b981; }
+        .wrong-answer { background-color: #fee2e2; border-color: #ef4444; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="main-container p-4 md:p-8 min-h-screen flex flex-col">
+
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-blue-800">AI Tutor</h1>
+            <p class="mt-2 text-md text-gray-600">Your Personal Science Learning Assistant for Class 10, 11 & 12</p>
+            <div class="mt-4 flex justify-center space-x-4">
+                <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">CBSE</span>
+                <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">NCERT</span>
+                <span class="bg-yellow-100 text-yellow-800 text-sm font-medium px-3 py-1 rounded-full">WBCHSE</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow">
+            <!-- Input Section -->
+            <div class="glassmorphism rounded-xl p-6 shadow-lg mb-8">
+                <div class="flex items-center space-x-4">
+                    <textarea id="question-input" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300" rows="3" placeholder="Apnar biggyan-er proshno korun..."></textarea>
+                    <button id="mic-button" class="p-4 bg-blue-600 text-white rounded-full hover:bg-blue-700 btn-primary flex-shrink-0">
+                        <i data-lucide="mic"></i>
+                    </button>
+                </div>
+                <button id="submit-button" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 btn-primary">
+                    Get Answer
+                </button>
+            </div>
+
+            <!-- Output Section -->
+            <div id="output-container" class="glassmorphism rounded-xl p-6 shadow-lg min-h-[200px] hidden">
+                 <!-- Loading Spinner -->
+                <div id="loading-spinner" class="text-center hidden">
+                    <svg class="animate-spin h-10 w-10 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <p class="mt-2 text-gray-600">Apnar jonno uttor toiri kora hochhe...</p>
+                </div>
+
+                <!-- Answer Display -->
+                <div id="answer-wrapper">
+                    <div id="voice-controls" class="flex items-center space-x-3 mb-4 hidden">
+                        <button id="play-pause-button" class="p-3 bg-green-500 text-white rounded-full hover:bg-green-600 btn-primary"><i id="play-icon" data-lucide="play"></i><i id="pause-icon" data-lucide="pause" class="hidden"></i></button>
+                        <span id="voice-status" class="text-gray-600 font-medium">Uttor-ti shunun</span>
+                    </div>
+                    <div id="answer-container" class="prose max-w-none"></div>
+                    <div id="diagram-container" class="mt-6 hidden"></div>
+                    <div id="video-container" class="mt-6 hidden"></div>
+                    
+                    <!-- New Gemini Feature Section -->
+                    <div id="gemini-features" class="mt-8 border-t pt-6 hidden">
+                        <button id="generate-questions-button" class="w-full bg-purple-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-700 btn-primary flex items-center justify-center space-x-2">
+                           <span>✨ Generate Practice Questions</span>
+                        </button>
+                        <div id="practice-section" class="mt-6 hidden">
+                            <h3 class="text-xl font-semibold mb-4 text-purple-800">Practice Questions</h3>
+                             <div id="practice-loading-spinner" class="text-center hidden">
+                                <svg class="animate-spin h-8 w-8 text-purple-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <p class="mt-2 text-gray-600">Proshno toiri kora hochhe...</p>
+                            </div>
+                            <div id="practice-questions-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+         <!-- Error Modal -->
+        <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+            <div class="bg-white rounded-lg p-6 shadow-xl max-w-sm w-full text-center">
+                <h3 class="text-xl font-bold text-red-600 mb-4">Error</h3>
+                <p id="error-message" class="text-gray-700 mb-6"></p>
+                <button id="close-modal-button" class="bg-red-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-600 transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        lucide.createIcons();
+        
+        // --- DOM Element References ---
+        const questionInput = document.getElementById('question-input');
+        const submitButton = document.getElementById('submit-button');
+        const outputContainer = document.getElementById('output-container');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const answerWrapper = document.getElementById('answer-wrapper');
+        const answerContainer = document.getElementById('answer-container');
+        const diagramContainer = document.getElementById('diagram-container');
+        const videoContainer = document.getElementById('video-container');
+        const geminiFeatures = document.getElementById('gemini-features');
+        const generateQuestionsButton = document.getElementById('generate-questions-button');
+        const practiceSection = document.getElementById('practice-section');
+        const practiceLoadingSpinner = document.getElementById('practice-loading-spinner');
+        const practiceQuestionsContainer = document.getElementById('practice-questions-container');
+
+        const micButton = document.getElementById('mic-button');
+        const voiceControls = document.getElementById('voice-controls');
+        const playPauseButton = document.getElementById('play-pause-button');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+        const voiceStatus = document.getElementById('voice-status');
+        const errorModal = document.getElementById('error-modal');
+        const errorMessage = document.getElementById('error-message');
+        const closeModalButton = document.getElementById('close-modal-button');
+
+        // --- State Management ---
+        let isRecording = false, isSpeaking = false, isPaused = false;
+        let utterance;
+        let currentTopicContext = '';
+        let currentLanguageCode = 'en-US'; // Default language
+
+        // --- Speech Recognition (Voice Input) ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            micButton.addEventListener('click', () => {
+                if (isRecording) { recognition.stop(); return; }
+                try {
+                    // Try to guess language from browser settings for better accuracy
+                    recognition.lang = navigator.language || 'en-US';
+                    recognition.start();
+                } catch(e) {
+                    showError("Voice recognition could not be started.");
+                }
+            });
+            recognition.onstart = () => { isRecording = true; micButton.classList.add('animate-pulse', 'bg-red-600'); };
+            recognition.onend = () => { isRecording = false; micButton.classList.remove('animate-pulse', 'bg-red-600'); };
+            recognition.onresult = (event) => { questionInput.value = event.results[0][0].transcript; };
+            recognition.onerror = (event) => { showError(`Voice recognition error: ${event.error}`); };
+        } else {
+            micButton.disabled = true;
+            micButton.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        // --- Text-to-Speech (Voice Output) with Language Support ---
+        function setupSpeechSynthesis(text, langCode) {
+            if ('speechSynthesis' in window) {
+                // Cancel any previous speech
+                window.speechSynthesis.cancel();
+                
+                utterance = new SpeechSynthesisUtterance(text);
+                // Set the detected language for better pronunciation
+                utterance.lang = langCode || 'en-US';
+
+                utterance.onstart = () => { isSpeaking = true; isPaused = false; playIcon.classList.add('hidden'); pauseIcon.classList.remove('hidden'); voiceStatus.textContent = "Speaking..."; };
+                utterance.onpause = () => { isPaused = true; playIcon.classList.remove('hidden'); pauseIcon.classList.add('hidden'); voiceStatus.textContent = "Paused"; };
+                utterance.onresume = () => { isPaused = false; playIcon.classList.add('hidden'); pauseIcon.classList.remove('hidden'); voiceStatus.textContent = "Speaking..."; };
+                utterance.onend = () => { isSpeaking = false; isPaused = false; playIcon.classList.remove('hidden'); pauseIcon.classList.add('hidden'); voiceStatus.textContent = "Listen to the answer"; };
+                voiceControls.classList.remove('hidden');
+            }
+        }
+        playPauseButton.addEventListener('click', () => {
+            if (!utterance) return;
+            if (isSpeaking) {
+                if (isPaused) { window.speechSynthesis.resume(); } else { window.speechSynthesis.pause(); }
+            } else { window.speechSynthesis.speak(utterance); }
+        });
+        
+        // --- API Caller ---
+        async function callBackendAPI(payload) {
+            const backendApiUrl = 'https://tech21-2.onrender.com/api/generate';
+            try {
+                const response = await fetch(backendApiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload) 
+                });
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    if (errorBody.error && errorBody.error.includes("API key is not configured")) {
+                        throw new Error("Backend Shomosha: Apnar server-e GEMINI_API_KEY set kora nei. Doya kore Render.com dashboard-e giye 'Environment' section-e API Key-ti set korun.");
+                    }
+                    throw new Error(`Server Error: ${errorBody.error || response.statusText}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Error calling backend API:', error);
+                throw error;
+            }
+        }
+
+        // --- Main Logic: Handle Form Submission ---
+        submitButton.addEventListener('click', handleSubmission);
+        questionInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmission(); }
+        });
+
+        async function handleSubmission() {
+            const question = questionInput.value.trim();
+            if (!question) { showError("Please enter a question."); return; }
+            currentTopicContext = question; 
+            
+            // Reset UI
+            outputContainer.classList.remove('hidden');
+            loadingSpinner.classList.remove('hidden');
+            answerWrapper.classList.add('hidden');
+            geminiFeatures.classList.add('hidden');
+            practiceSection.classList.add('hidden');
+            practiceQuestionsContainer.innerHTML = '';
+            window.speechSynthesis.cancel();
+
+            try {
+                // ** IMPROVED PROMPT FOR LANGUAGE DETECTION **
+                const prompt = `Your primary instruction is to FIRST detect the language of the user's question. THEN, provide the entire JSON response in that detected language.
+                User Question: "${question}".
+                Your tasks:
+                1.  **Answer:** Explain the concept clearly for a Class 10-12 student in the detected language.
+                2.  **SVG Diagram:** If helpful, provide a valid, complete, monochrome SVG code string. Any text inside the SVG must also be in the detected language. If not relevant, provide an empty string "".
+                3.  **Video Query:** Provide a 4-6 word YouTube search query, also in the detected language.
+                4.  **Language Code:** Provide the BCP-47 language code for the language you used (e.g., 'en-US', 'bn-IN', 'hi-IN').`;
+                
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: { 
+                                "answer": { "type": "STRING" }, 
+                                "svgDiagram": { "type": "STRING" }, 
+                                "videoQuery": { "type": "STRING" },
+                                "detectedLanguage": { "type": "STRING", "description": "The BCP-47 language code of the answer, e.g., 'en-US', 'bn-IN'." }
+                            },
+                            required: ["answer", "svgDiagram", "videoQuery", "detectedLanguage"]
+                        }
+                    }
+                };
+                const geminiResponse = await callBackendAPI(payload);
+                 if (geminiResponse.candidates && geminiResponse.candidates[0].content && geminiResponse.candidates[0].content.parts[0].text) {
+                    const parsedJson = JSON.parse(geminiResponse.candidates[0].content.parts[0].text);
+                    displayResult(parsedJson);
+                } else {
+                    throw new Error('Malformed or empty response from AI via backend.');
+                }
+            } catch (error) {
+                console.error("Error during submission:", error);
+                showError(error.message || "An unknown error occurred.");
+            } finally {
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+        
+        function displayResult(data) {
+            const { answer, svgDiagram, videoQuery, detectedLanguage } = data;
+            
+            // Store the detected language for future use
+            currentLanguageCode = detectedLanguage || 'en-US';
+
+            answerContainer.innerHTML = `<p>${answer.replace(/\n/g, '<br>')}</p>`;
+            if (svgDiagram && svgDiagram.trim().startsWith('<svg')) {
+                diagramContainer.innerHTML = `<h3 class="text-xl font-semibold mb-2 text-blue-700">Diagram</h3>${svgDiagram}`;
+                diagramContainer.classList.remove('hidden');
+            }
+            if (videoQuery) {
+                const videoSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(videoQuery)}`;
+                videoContainer.innerHTML = `<h3 class="text-xl font-semibold mb-2 mt-4 text-red-700">Video Recommendation</h3><a href="${videoSearchUrl}" target="_blank" class="inline-flex items-center space-x-2 bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 btn-primary"><i data-lucide="youtube" class="w-5 h-5"></i><span>Search: "${videoQuery}"</span></a>`;
+                videoContainer.classList.remove('hidden');
+            }
+            
+            answerWrapper.classList.remove('hidden');
+            geminiFeatures.classList.remove('hidden');
+            // Pass the detected language to the speech synthesizer
+            setupSpeechSynthesis(answer, currentLanguageCode);
+            lucide.createIcons();
+        }
+        
+        // --- Gemini Feature: Generate Practice Questions ---
+        generateQuestionsButton.addEventListener('click', handleGenerateQuestions);
+        
+        async function handleGenerateQuestions() {
+            if (!currentTopicContext) { showError("Please ask a question first."); return; }
+            
+            practiceSection.classList.remove('hidden');
+            practiceLoadingSpinner.classList.remove('hidden');
+            practiceQuestionsContainer.innerHTML = '';
+            
+            try {
+                // ** IMPROVED PROMPT FOR LANGUAGE CONSISTENCY **
+                const prompt = `Based on the topic "${currentTopicContext}", generate 3 practice questions.
+                CRITICAL INSTRUCTION: You MUST generate the entire response (questions, options, answers) in the language with this BCP-47 code: "${currentLanguageCode}".
+                Provide 2 multiple-choice questions (MCQ) and 1 short-answer question. For MCQs, provide 4 options.`;
+                
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    "question": { "type": "STRING" }, "type": { "type": "STRING", "enum": ["MCQ", "Short Answer"] },
+                                    "options": { "type": "ARRAY", "items": { "type": "STRING" } },
+                                    "answer": { "type": "STRING" }
+                                },
+                                required: ["question", "type", "answer"]
+                            }
+                        }
+                    }
+                };
+                const geminiResponse = await callBackendAPI(payload);
+                if (geminiResponse.candidates && geminiResponse.candidates[0].content && geminiResponse.candidates[0].content.parts[0].text) {
+                    const questions = JSON.parse(geminiResponse.candidates[0].content.parts[0].text);
+                    displayPracticeQuestions(questions);
+                } else {
+                    throw new Error('Malformed or empty response from AI for practice questions.');
+                }
+
+            } catch(error) {
+                console.error("Error generating questions:", error);
+                showError("Could not generate practice questions at this time.");
+            } finally {
+                practiceLoadingSpinner.classList.add('hidden');
+            }
+        }
+
+        function displayPracticeQuestions(questions) {
+            practiceQuestionsContainer.innerHTML = '';
+            questions.forEach((q, index) => {
+                const card = document.createElement('div');
+                card.className = 'practice-question-card';
+                let optionsHTML = '';
+                if(q.type === 'MCQ') {
+                    optionsHTML = `<div class="options-container mt-4">${q.options.map((opt, i) => `<label class="option-label"><input type="radio" name="q${index}" value="${opt}"><span>${opt}</span></label>`).join('')}</div>
+                    <button class="check-answer-btn mt-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Check Answer</button>`;
+                } else {
+                     optionsHTML = `<button class="check-answer-btn mt-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Show Answer</button>`;
+                }
+                card.innerHTML = `<p class="font-semibold">${index + 1}. ${q.question}</p>${optionsHTML}<p class="answer-feedback mt-2 text-sm hidden"></p>`;
+                practiceQuestionsContainer.appendChild(card);
+                
+                card.querySelector('.check-answer-btn').addEventListener('click', (e) => {
+                    const feedbackEl = card.querySelector('.answer-feedback');
+                    feedbackEl.classList.remove('hidden', 'text-green-700', 'text-red-700', 'text-yellow-700', 'text-blue-800');
+                    if(q.type === 'MCQ') {
+                        const selectedOption = card.querySelector(`input[name="q${index}"]:checked`);
+                        if (!selectedOption) { feedbackEl.textContent = "Please select an option."; feedbackEl.classList.add('text-yellow-700'); feedbackEl.classList.remove('hidden'); return; }
+                        card.querySelectorAll('.option-label').forEach(label => {
+                           label.classList.remove('correct-answer', 'wrong-answer');
+                           if(label.querySelector('input').value === q.answer) { label.classList.add('correct-answer'); }
+                        });
+                        if(selectedOption.value === q.answer) {
+                           feedbackEl.textContent = "Correct!"; feedbackEl.classList.add('text-green-700');
+                        } else {
+                           feedbackEl.textContent = `Incorrect. The correct answer is highlighted.`; feedbackEl.classList.add('text-red-700');
+                           const selectedLabel = selectedOption.closest('.option-label');
+                           if(!selectedLabel.classList.contains('correct-answer')) { selectedLabel.classList.add('wrong-answer'); }
+                        }
+                    } else { feedbackEl.textContent = `Answer: ${q.answer}`; feedbackEl.classList.add('text-blue-800'); }
+                    feedbackEl.classList.remove('hidden');
+                });
+            });
+        }
+        
+        // --- Utility Functions ---
+        function showError(message) { errorMessage.textContent = message; errorModal.classList.remove('hidden'); }
+        closeModalButton.addEventListener('click', () => { errorModal.classList.add('hidden'); });
+        
+    </script>
+</body>
+</html>
